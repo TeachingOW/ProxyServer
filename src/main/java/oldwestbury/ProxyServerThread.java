@@ -11,24 +11,28 @@ public class ProxyServerThread extends Thread {
     this.client = client;
     try {
       // http://gaia.cs.umass.edu/wireshark-labs/INTRO-wireshark-file1.html
+      // http://httpbin.org/anything
       this.server = new Socket("google.com", 80);
     } catch (Exception e) {
     }
   }
 
   public void run() {
-    try (OutputStream serverout = server.getOutputStream();
-         BufferedReader clientin =
-             new BufferedReader(new InputStreamReader(client.getInputStream()));
-         BufferedReader serverin =
-             new BufferedReader(new InputStreamReader(server.getInputStream()));) {
-      // for (;;) {
-      client.setSoTimeout(1000);
-      System.out.println("  waiting");
-      HttpProtocol.process(clientin, serverout, serverin);
-      // }
+    System.out.println("Client " + client.getLocalAddress() + ":" + client.getLocalPort() + "  "
+        + client.getRemoteSocketAddress() + ":" + client.getPort() + "\n ");
+    System.out.println("Server " + server.getLocalAddress() + ":" + server.getLocalPort() + "  "
+        + server.getRemoteSocketAddress() + ":" + server.getPort() + "\n ");
 
-      //  socket.close();
+    try (OutputStream serverout = server.getOutputStream();
+         InputStream clientin = client.getInputStream();
+         InputStream serverin = server.getInputStream();
+         OutputStream clientout = client.getOutputStream();
+
+    ) {
+      for (;;) {
+        HttpProtocol.process(clientin, serverout, serverin, clientout);
+      }
+
     }
 
     catch (IOException e) {

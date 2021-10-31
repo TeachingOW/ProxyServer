@@ -6,22 +6,24 @@ import java.net.*;
 public class ProxyServerThread extends Thread {
   private Socket client = null;
   private Socket server = null;
+
   public ProxyServerThread(Socket client) {
     super("ProxyServerThread");
     this.client = client;
     try {
       // http://gaia.cs.umass.edu/wireshark-labs/INTRO-wireshark-file1.html
       // http://httpbin.org/anything
-      this.server = new Socket("google.com", 80);
+      this.server = new Socket("gaia.cs.umass.edu", 80);
     } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
   public void run() {
     System.out.println("Client " + client.getLocalAddress() + ":" + client.getLocalPort() + "  "
-        + client.getRemoteSocketAddress() + ":" + client.getPort() + "\n ");
+        + client.getRemoteSocketAddress() + "\n ");
     System.out.println("Server " + server.getLocalAddress() + ":" + server.getLocalPort() + "  "
-        + server.getRemoteSocketAddress() + ":" + server.getPort() + "\n ");
+        + server.getRemoteSocketAddress() + "\n ");
 
     try (OutputStream serverout = server.getOutputStream();
          InputStream clientin = client.getInputStream();
@@ -29,13 +31,17 @@ public class ProxyServerThread extends Thread {
          OutputStream clientout = client.getOutputStream();
 
     ) {
-      for (;;) {
-        HttpProtocol.process(clientin, serverout, serverin, clientout);
-      }
+      ReaderWriter clientserver = new ReaderWriter(clientin, serverout);
+      ReaderWriter serverclient = new ReaderWriter(serverin, clientout);
+
+      serverclient.start();
+      clientserver.start();
+      serverclient.join();
+      clientserver.join();
 
     }
 
-    catch (IOException e) {
+    catch (Exception e) {
       e.printStackTrace();
     }
   }
